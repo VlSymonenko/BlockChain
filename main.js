@@ -49,7 +49,8 @@ class Blockchain{
 }
 
 //Usage
-
+//ToDo
+//Write proof-of-work
 let symonCoin = new Blockchain();
 symonCoin.addBlock(new Block(1,"17/11/2018" , {amount : 5}));
 symonCoin.addBlock(new Block(2,"18/11/2018" , {amount : 6}));
