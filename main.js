@@ -1,69 +1,38 @@
-const SHA256 = require ('crypto-js/sha256');
-class Block{
-	constructor(index , timeStamp , data , previousHash = ''){
-		this.index = index;
-		this.timeStamp = timeStamp;
-		this.data = data;
-		this.previousHash = previousHash;
-		this.hash = this.calculateHash();
-		this.nonce = 0;
-	}
+const { Blockchain, Transaction } = require('./blockchain');
+const EC = require('elliptic').ec;
+const ec = new EC('secp256k1');
 
-	calculateHash(){
-		return SHA256(this.index + this.previousHash + this.timeStamp + JSON.stringify(this.data) + this.nonce).toString();
-	}
+// Your private key goes here
+const myKey = ec.keyFromPrivate('7c4c45907dec40c91bab3480c39032e90049f1a44f3e18c3e07c23e3273995cf');
 
-	mineBlock(difficulty){
-		while(this.hash.substring(0, difficulty) !== Array(difficulty+1).join("0")){
-			this.nonce++;
-			this.hash = this.calculateHash();
-		}
+// From that we can calculate your public key (which doubles as your wallet address)
+const myWalletAddress = myKey.getPublic('hex');
 
-		console.log("Block mined : " + this.hash);
-	}
-}
+// Create new instance of Blockchain class
+const symonCoin = new Blockchain();
 
-class Blockchain{
-	constructor(){
-		this.chain = [this.createGenesisBlock()];
-		this.difficulty = 4;
-	}
+// Create a transaction & sign it with your key
+const tx1 = new Transaction(myWalletAddress, 'address2', 100);
+tx1.signTransaction(myKey);
+symonCoin.addTransaction(tx1);
 
-	createGenesisBlock(){
-		return new Block(0,"16/11/2018","Some data","0");
-	}
+// Mine block
+symonCoin.minePendingTransactions(myWalletAddress);
 
-	getLatestBlock(){
-		return this.chain[this.chain.length-1];
-	}
-	addBlock(newBlock){
-		newBlock.previousHash=this.getLatestBlock().hash;
-		newBlock.mineBlock(this.difficulty);
-		this.chain.push(newBlock);
-	}
+// Create second transaction
+const tx2 = new Transaction(myWalletAddress, 'address1', 50);
+tx2.signTransaction(myKey);
+symonCoin.addTransaction(tx2);
 
-	isChainValid(){
-		//Add simple check 
-		// Will be deleted soon
-		for(let i=1; i<this.chain.length;i++){
-			 const currentBlock = this.chain[i];
-			 const previousBlock = this.chain[i-1];
-			 if(currentBlock.hash !== currentBlock.calculateHash()){
-			 	return false;
-			}
-			 if(currentBlock.previousHash !==previousBlock.hash){
-			 	return false;
-			 }
-			}
-	return true;
-	}
-}
+// Mine block
+symonCoin.minePendingTransactions(myWalletAddress);
 
-//Usage
+console.log();
+console.log(`Balance of xavier is ${symonCoin.getBalanceOfAddress(myWalletAddress)}`);
 
-let symonCoin = new Blockchain();
+// Uncomment this line if you want to test tampering with the chain
+// savjeeCoin.chain[1].transactions[0].amount = 10;
 
-console.log('Mining block 1');
-symonCoin.addBlock(new Block(1,"17/11/2018" , {amount : 5}));
-console.log('Mining block 2');
-symonCoin.addBlock(new Block(2,"18/11/2018" , {amount : 6}));
+// Check if the chain is valid
+console.log();
+console.log('Blockchain valid?', symonCoin.isChainValid() ? 'Yes' : 'No');
